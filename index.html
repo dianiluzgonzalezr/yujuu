@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Yujuu Accesorios</title>
+    <link id="favicon-link" rel="icon" type="image/png" href="https://via.placeholder.com/32">
+    <!-- Librería CropperJS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lato&family=Montserrat:wght@400;700&family=Open+Sans&family=Pacifico&family=Playball&family=Poppins:wght@400;600&family=Roboto&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a1a1a;
+            --accent: #ff3366;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --font-title: 'Montserrat', sans-serif;
+            --font-text: 'Open Sans', sans-serif;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: var(--font-text);
+            background-color: var(--bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+        h1, h2, h3, h4, h5, h6, .product-title { font-family: var(--font-title); }
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo-img { height: 35px; object-fit: contain; cursor: pointer; }
+        header h1 { margin: 0; font-size: 1.2rem; cursor: pointer; }
+        .nav-actions { display: flex; gap: 10px; align-items: center; }
+        .cart-btn { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
+        
+        .container { max-width: 1200px; margin: 1rem auto; padding: 0 10px; flex: 1; width: 100%; }
+        
+        /* Buscador catálogo */
+        .catalog-header { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; }
+        .search-bar { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 0.95rem; font-family: var(--font-text); }
+        .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+        .filter-btn { background: white; border: 1px solid #ddd; padding: 6px 12px; border-radius: 15px; cursor: pointer; white-space: nowrap; font-size: 0.85rem; font-family: var(--font-text); }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* Grid de Productos */
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+        @media(min-width: 768px) { .product-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; } }
+        
+        .product-card { background: var(--card-bg); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; position: relative; }
+        .product-card.inactive { opacity: 0.5; filter: grayscale(1); }
+        .product-img { width: 100%; height: 160px; object-fit: cover; background: #eee; cursor: pointer; }
+        @media(min-width: 768px) { .product-img { height: 200px; } }
+        
+        .product-info { padding: 10px; display: flex; flex-direction: column; flex: 1; }
+        .product-title { font-size: 1rem; font-weight: bold; margin: 0 0 4px 0; }
+        .product-desc { font-size: 0.8rem; opacity: 0.8; margin-bottom: 8px; flex: 1; }
+        .price-box { font-size: 1rem; font-weight: bold; color: var(--accent); margin-bottom: 6px; }
+        .wholesale-info { font-size: 0.7rem; color: #888; margin-bottom: 8px; }
+        
+        .variants-section { margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
+        .variants-section select { padding: 4px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.8rem; font-family: var(--font-text); }
+
+        .btn-add { background: var(--primary); color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 0.85rem; }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Drawer Carrito */
+        .cart-drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: none; }
+        .cart-drawer-overlay.open { display: block; }
+        .cart-drawer { position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100%; background: white; z-index: 1001; box-shadow: -2px 0 10px rgba(0,0,0,0.1); transition: right 0.3s ease; display: flex; flex-direction: column; }
+        .cart-drawer.open { right: 0; }
+        .cart-header { padding: 15px; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center; }
+        .cart-body { padding: 15px; flex: 1; overflow-y: auto; color: var(--text-color); }
+        .cart-footer { padding: 15px; background: #f1f1f1; border-top: 1px solid #ddd; }
+
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; font-size: 0.85rem; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f1f1f1; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 4px; font-weight: 500; font-size: 0.9rem; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 0.9rem; font-family: var(--font-text); }
+        .btn-primary { background: var(--accent); color: white; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 0.95rem; }
+
+        /* Modal Cropper */
+        #cropper-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .cropper-container-box { background: white; padding: 15px; border-radius: 8px; max-width: 500px; width: 100%; display: flex; flex-direction: column; gap: 10px; max-height: 90vh; color: #333; }
+        .img-container { max-height: 350px; width: 100%; }
+        .img-container img { max-width: 100%; display: block; }
+
+        /* Toast */
+        #toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 3000; display: flex; flex-direction: column; gap: 8px; width: 90%; max-width: 400px; pointer-events: none; }
+        .toast { background: var(--primary); color: white; padding: 12px 16px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 0.9rem; pointer-events: auto; animation: fadeInOut 3s forwards; border-left: 5px solid var(--accent); }
+        @keyframes fadeInOut { 0% { opacity: 0; transform: translateY(20px); } 15% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-20px); } }
+
+        footer { padding: 20px; text-align: center; background: var(--primary); color: #fff; margin-top: auto; }
+        .social-icons { display: flex; justify-content: center; gap: 15px; margin-bottom: 10px; font-size: 1.2rem; }
+        .social-icons a { color: white; text-decoration: none; opacity: 0.8; transition: opacity 0.2s; }
+        .social-icons a:hover { opacity: 1; }
+        .payment-methods-footer { font-size: 0.85rem; opacity: 0.9; margin: 15px 0 10px 0; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 4px; display: inline-block;}
+        #secret-trigger { opacity: 0.08; cursor: pointer; font-size: 12px; user-select: none; transition: opacity 0.3s; display: inline-block; margin-top: 10px; }
+        #secret-trigger:hover { opacity: 1; }
+
+        .admin-tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; }
+        .admin-tab-btn { background: #ddd; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; color: #333; font-family: var(--font-title); font-weight: bold;}
+        .admin-tab-btn.active { background: var(--accent); color: white; }
+        .admin-section { display: none; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: #333; }
+        .admin-section.active { display: block; }
+
+        /* Dashboard Tarjetas */
+        .dash-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .dash-card { background: var(--bg); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #eee; border-left: 4px solid var(--accent); }
+        .dash-card h4 { margin: 0 0 5px 0; font-size: 0.85rem; color: #666; }
+        .dash-card .val { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+        
+        .badge-ref { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <img id="header-logo" class="logo-img" style="display:none;" onclick="cambiarVista('catalog')">
+            <h1 id="header-title" onclick="cambiarVista('catalog')">Mi Tienda</h1>
+        </div>
+        <div class="nav-actions">
+            <button class="cart-btn" onclick="toggleCartDrawer(true)">🛒 <span id="cart-count">0</span></button>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <!-- CATÁLOGO -->
+        <div id="view-catalog" class="view active">
+            <div class="catalog-header">
+                <input type="text" id="search-input" class="search-bar" placeholder="🔍 Buscar productos..." oninput="renderCatalog()">
+                <div class="filters" id="category-filters"></div>
+            </div>
+            <div class="product-grid" id="product-grid"></div>
+        </div>
+
+        <!-- PANEL ADMIN -->
+        <div id="view-admin" class="view">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                <h2>Panel de Administración</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-primary" onclick="cambiarVista('catalog')" style="width: auto; background: #666;">Ver Catálogo</button>
+                    <button class="btn-primary" onclick="cerrarSesionAdmin()" style="width: auto; background: red;">Cerrar Sesión</button>
+                </div>
+            </div>
+            
+            <div class="admin-tabs">
+                <button class="admin-tab-btn active" onclick="cambiarTabAdmin('productos')">📦 Productos</button>
+                <button class="admin-tab-btn" onclick="cambiarTabAdmin('pedidos')">📊 Pedidos & Dashboard</button>
+                <button class="admin-tab-btn" onclick="cambiarTabAdmin('clientes')">👥 Clientes</button>
+                <button class="admin-tab-btn" onclick="cambiarTabAdmin('config')">⚙️ Configuración</button>
+            </div>
+
+            <!-- PRODUCTOS ADMIN -->
+            <div id="admin-sec-productos" class="admin-section active">
+                <h3 id="form-product-title">Agregar Nuevo Producto</h3>
+                <form id="product-form" onsubmit="guardarProducto(event)">
+                    <input type="hidden" id="p-edit-id">
+                    <div class="form-group">
+                        <label>Título del Producto</label>
+                        <input type="text" id="p-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría (Busca o escribe una nueva)</label>
+                        <input type="text" id="p-category" list="category-list" placeholder="Ej: Ropa, Accesorios..." required>
+                        <datalist id="category-list"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="p-desc" rows="2" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Imagen (Subir, Arrastrar, Copiar/Pegar Ctrl+V)</label>
+                        <div id="drop-zone" style="border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 6px; background: #fafafa; cursor: pointer;">
+                            Haz clic, arrastra una imagen aquí, o pega con Ctrl+V
+                            <input type="file" id="p-img-file" accept="image/*" style="display:none;" onchange="cargarImagenInput(this)">
+                        </div>
+                        <div id="img-preview-container" style="margin-top: 10px; text-align: center; display:none;">
+                            <img id="img-preview" style="max-height: 120px; border-radius: 4px;">
+                            <br><button type="button" onclick="abrirRecortadorActual()" style="margin-top:5px; font-size:0.8rem; background:#666; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">✂️ Recortar imagen</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Precio Regular (Monto Numérico)</label>
+                        <input type="number" id="p-price" step="0.01" required>
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+                    <h4>Opciones de Venta al por Mayor</h4>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="p-wholesale-enabled" onchange="toggleMayorista()"> Activar precio al por mayor por rango</label>
+                    </div>
+                    <div id="wholesale-fields" style="display:none; background: #f9f9f9; padding: 10px; border-radius: 4px;">
+                        <div class="form-group">
+                            <label>Cantidad mínima para descuento</label>
+                            <input type="number" id="p-wholesale-min" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label>Precio unitario al por mayor</label>
+                            <input type="number" id="p-wholesale-price" step="0.01">
+                        </div>
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+                    <h4>Variables Dinámicas (Opcional)</h4>
+                    <div class="form-group">
+                        <label>Nombre Variable 1 (ej: Color)</label>
+                        <input type="text" id="p-var1-name" placeholder="Color">
+                        <input type="text" id="p-var1-vals" placeholder="Rojo, Azul, Negro (Separado por comas)" style="margin-top:5px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre Variable 2 (ej: Talla)</label>
+                        <input type="text" id="p-var2-name" placeholder="Talla">
+                        <input type="text" id="p-var2-vals" placeholder="S, M, L, XL (Separado por comas)" style="margin-top:5px;">
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button type="submit" class="btn-primary" id="btn-guardar-prod">Guardar Producto</button>
+                        <button type="button" id="btn-cancelar-edit" style="display:none; background:#888; color:white; border:none; padding:10px; border-radius:4px; cursor:pointer;" onclick="cancelarEdicionProd()">Cancelar</button>
+                    </div>
+                </form>
+
+                <hr style="margin: 30px 0; border:0; border-top:1px solid #ddd;">
+                <h3>Listado de Productos Registrados</h3>
+                <input type="text" id="admin-search-prod" class="search-bar" placeholder="🔍 Buscar producto..." oninput="renderAdminProductos()" style="margin-bottom: 10px;">
+                <div id="admin-product-list" style="overflow-x:auto;"></div>
+            </div>
+
+            <!-- PEDIDOS & DASHBOARD ADMIN -->
+            <div id="admin-sec-pedidos" class="admin-section">
+                <h3>Dashboard de Rendimiento</h3>
+                <div class="dash-cards">
+                    <div class="dash-card">
+                        <h4>Ventas (Últ. 7 días)</h4>
+                        <div class="val" id="dash-ventas-semana">0</div>
+                    </div>
+                    <div class="dash-card">
+                        <h4>Ingresos (Este mes)</h4>
+                        <div class="val" id="dash-ingresos-mes">$0</div>
+                    </div>
+                    <div class="dash-card">
+                        <h4>Producto Estrella</h4>
+                        <div class="val" id="dash-top-prod" style="font-size:1rem;">N/A</div>
+                    </div>
+                </div>
+                <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
+                <h3>Historial de Pedidos Generados</h3>
+                <div id="admin-orders-list" style="overflow-x:auto;"></div>
+            </div>
+
+            <!-- CLIENTES ADMIN -->
+            <div id="admin-sec-clientes" class="admin-section">
+                <h3>Directorio de Clientes</h3>
+                <input type="text" id="admin-search-client" class="search-bar" placeholder="🔍 Buscar cliente por nombre o teléfono..." oninput="renderAdminClientes()" style="margin-bottom: 15px;">
+                <div id="admin-clients-list" style="overflow-x:auto;"></div>
+            </div>
+
+            <!-- CONFIGURACIÓN ADMIN -->
+            <div id="admin-sec-config" class="admin-section">
+                <form id="config-form" onsubmit="guardarConfiguracion(event)">
+                    
+                    <h3>Seguridad y Acceso</h3>
+                    <div class="form-group" style="background:#f9f9f9; padding:10px; border-left:4px solid var(--accent); border-radius:4px;">
+                        <label>Nuevo PIN de Acceso al Panel</label>
+                        <div style="display:flex; gap:10px;">
+                            <input type="password" id="cfg-nuevo-pin" placeholder="Ingresa un nuevo PIN" style="flex:1;">
+                            <button type="button" onclick="cambiarPin()" style="background:var(--primary); color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Cambiar PIN</button>
+                        </div>
+                        <small style="color:#666;">Dejar en blanco si no deseas cambiarlo. (Por defecto: 1234)</small>
+                    </div>
+
+                    <hr style="margin: 15px 0; border:0; border-top:1px solid #eee;">
+                    <h3>Moneda y Precios</h3>
+                    <div class="form-group">
+                        <label>Moneda Base del Catálogo</label>
+                        <select id="cfg-currency-base">
+                            <option value="USD">Dólares (USD)</option>
+                            <option value="BS">Bolívares (BS)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="cfg-currency-dual"> Mostrar precios en ambas monedas (USD y BS)</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Tasa de Cambio (Ej. 1 USD = X BS)</label>
+                        <input type="number" id="cfg-exchange-rate" step="0.01" value="1">
+                    </div>
+
+                    <hr style="margin: 15px 0; border:0; border-top:1px solid #eee;">
+                    <h3>Métodos de Pago Visibles</h3>
+                    <p style="font-size:0.85rem; color:#666;">Selecciona los métodos que ofreces. Estos se mostrarán en el pie de página de la tienda.</p>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="cfg-pago-divisa"> Divisa (Efectivo)</label>
+                        <label><input type="checkbox" id="cfg-pago-soberanos"> Soberanos</label>
+                        <label><input type="checkbox" id="cfg-pago-transferencia"> Transferencia Bancaria</label>
+                        <label><input type="checkbox" id="cfg-pago-pagomovil"> Pago Móvil</label>
+                        <label><input type="checkbox" id="cfg-pago-zelle"> Zelle</label>
+                    </div>
+
+                    <hr style="margin: 15px 0; border:0; border-top:1px solid #eee;">
+                    <h3>Tipografía y Colores</h3>
+                    <div class="form-group">
+                        <label>Fuente para Títulos</label>
+                        <select id="cfg-font-title">
+                            <option value="'Montserrat', sans-serif">Montserrat</option>
+                            <option value="'Poppins', sans-serif">Poppins</option>
+                            <option value="'Roboto', sans-serif">Roboto</option>
+                            <option value="'Playball', cursive">Playball (Cursiva)</option>
+                            <option value="'Pacifico', cursive">Pacifico (Cursiva)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fuente para Textos y Descripciones</label>
+                        <select id="cfg-font-text">
+                            <option value="'Open Sans', sans-serif">Open Sans</option>
+                            <option value="'Lato', sans-serif">Lato</option>
+                            <option value="'Roboto', sans-serif">Roboto</option>
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="system-ui, sans-serif">Predeterminada del Sistema</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <div class="form-group" style="flex:1;">
+                            <label>Color Primario (Header, Footer)</label>
+                            <input type="color" id="cfg-primary" value="#1a1a1a" style="height:40px; padding:2px;">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Color Acento (Botones, Precios)</label>
+                            <input type="color" id="cfg-accent" value="#ff3366" style="height:40px; padding:2px;">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Color del Texto</label>
+                            <input type="color" id="cfg-text-color" value="#333333" style="height:40px; padding:2px;">
+                        </div>
+                    </div>
+
+                    <hr style="margin: 15px 0; border:0; border-top:1px solid #eee;">
+                    <h3>Imágenes de Marca</h3>
+                    <div class="form-group">
+                        <label>Subir Logo de la Marca</label>
+                        <input type="file" id="cfg-logo-file" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label>Subir Favicon (Icono pestaña navegador)</label>
+                        <input type="file" id="cfg-favicon-file" accept="image/*">
+                    </div>
+
+                    <hr style="margin: 15px 0; border:0; border-top:1px solid #eee;">
+                    <h3>Redes Sociales y Contacto</h3>
+                    <div class="form-group">
+                        <label>WhatsApp (Código país + número, ej: 584140000000)</label>
+                        <input type="text" id="cfg-wa" placeholder="584140000000">
+                    </div>
+                    <div class="form-group">
+                        <label>Enlace de Instagram</label>
+                        <input type="url" id="cfg-ig" placeholder="https://instagram.com/tu_usuario">
+                    </div>
+                    <div class="form-group">
+                        <label>Enlace de Facebook</label>
+                        <input type="url" id="cfg-fb" placeholder="https://facebook.com/tu_pagina">
+                    </div>
+                    <div class="form-group">
+                        <label>Enlace de TikTok</label>
+                        <input type="url" id="cfg-tiktok" placeholder="https://tiktok.com/@tu_usuario">
+                    </div>
+                    <div style="position: sticky; bottom: 20px;">
+                        <button type="submit" class="btn-primary" style="box-shadow: 0 4px 10px rgba(0,0,0,0.3);">💾 Guardar Toda la Configuración</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <div class="social-icons" id="footer-socials"></div>
+        <div class="payment-methods-footer" id="footer-payments" style="display:none;"></div>
+        <p id="footer-copy" style="margin:0;">© 2026 Mi Tienda.</p>
+        <div><span id="secret-trigger" title="Admin">🔒</span></div>
+    </footer>
+
+    <!-- CARRITO LATERAL -->
+    <div class="cart-drawer-overlay" id="cart-overlay" onclick="toggleCartDrawer(false)"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h3 style="margin:0; font-family:var(--font-title);">Tu Pedido</h3>
+            <button onclick="toggleCartDrawer(false)" style="background:none; border:none; color:white; font-size:1.2rem; cursor:pointer;">✕</button>
+        </div>
+        <div class="cart-body" id="cart-drawer-content"></div>
+        <div class="cart-footer" id="cart-drawer-footer" style="display:none;">
+            <div id="cart-client-form" style="margin-bottom:10px;">
+                <input type="text" id="client-name" placeholder="Tu Nombre y Apellido" style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #ccc; border-radius:4px; font-family:var(--font-text);">
+                <input type="tel" id="client-phone" placeholder="Tu Teléfono / WhatsApp" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-family:var(--font-text);">
+            </div>
+            <div style="font-weight:bold; margin-bottom:10px; font-size:1.1rem; color:var(--text-color);" id="cart-total-text">Total: 0</div>
+            <button class="btn-primary" onclick="enviarWhatsApp()" style="background: #25d366; font-size: 1rem; padding: 12px; border-radius: 8px;">Enviar Pedido por WhatsApp 📲</button>
+        </div>
+    </div>
+
+    <!-- MODAL RECORTE -->
+    <div id="cropper-modal">
+        <div class="cropper-container-box">
+            <h3>Recortar Imagen</h3>
+            <div class="img-container">
+                <img id="image-to-crop">
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" onclick="cerrarRecortador()" style="padding:8px 16px; background:#888; color:white; border:none; border-radius:4px; cursor:pointer;">Cancelar</button>
+                <button type="button" onclick="guardarRecorte()" style="padding:8px 16px; background:var(--accent); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">Recortar y Usar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOASTS -->
+    <div id="toast-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+    <script>
+        // ESTADOS GLOBALES
+        let configMarca = JSON.parse(localStorage.getItem('tienda_config')) || {
+            primary: '#1a1a1a',
+            accent: '#ff3366',
+            textColor: '#333333',
+            fontTitle: "'Montserrat', sans-serif",
+            fontText: "'Open Sans', sans-serif",
+            logo: '',
+            favicon: '',
+            wa: '584140000000',
+            ig: '',
+            fb: '',
+            tiktok: '',
+            currencyBase: 'USD',
+            currencyDual: true,
+            exchangeRate: 40,
+            pagos: { divisa: true, soberanos: true, transferencia: false, pagomovil: true, zelle: true },
+            pinHash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4' // 1234 por defecto
+        };
+
+        let productos = JSON.parse(localStorage.getItem('tienda_productos')) || [];
+        let carrito = JSON.parse(localStorage.getItem('tienda_carrito')) || [];
+        let pedidos = JSON.parse(localStorage.getItem('tienda_pedidos')) || [];
+        let clientes = JSON.parse(localStorage.getItem('tienda_clientes')) || [];
+        let categoriaActual = 'todos';
+        let imagenBase64Actual = '';
+        let cropper = null;
+        let adminAutenticado = false;
+
+        aplicarConfiguracionMarca();
+
+        function mostrarAlerta(mensaje) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = mensaje;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function generarReferencia() {
+            return 'PED-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function formatPrice(valorBase) {
+            let num = Number(valorBase);
+            let formatoPrincipal = '';
+            let formatoSecundario = '';
+
+            if(configMarca.currencyBase === 'USD') {
+                formatoPrincipal = `$${num.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                if(configMarca.currencyDual && configMarca.exchangeRate) {
+                    let conv = num * configMarca.exchangeRate;
+                    formatoSecundario = ` / ${conv.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})} Bs`;
+                }
+            } else {
+                formatoPrincipal = `${num.toLocaleString('es-VE', {minimumFractionDigits:2, maximumFractionDigits:2})} Bs`;
+                if(configMarca.currencyDual && configMarca.exchangeRate) {
+                    let conv = num / configMarca.exchangeRate;
+                    formatoSecundario = ` / $${conv.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                }
+            }
+            return formatoPrincipal + formatoSecundario;
+        }
+
+        function aplicarConfiguracionMarca() {
+            document.documentElement.style.setProperty('--primary', configMarca.primary);
+            document.documentElement.style.setProperty('--accent', configMarca.accent);
+            document.documentElement.style.setProperty('--text-color', configMarca.textColor || '#333333');
+            document.documentElement.style.setProperty('--font-title', configMarca.fontTitle || "'Montserrat', sans-serif");
+            document.documentElement.style.setProperty('--font-text', configMarca.fontText || "'Open Sans', sans-serif");
+            
+            const logoEl = document.getElementById('header-logo');
+            const titleEl = document.getElementById('header-title');
+            if (configMarca.logo) {
+                logoEl.src = configMarca.logo;
+                logoEl.style.display = 'block';
+                titleEl.style.display = 'none';
+            } else {
+                logoEl.style.display = 'none';
+                titleEl.style.display = 'block';
+            }
+
+            if (configMarca.favicon) {
+                document.getElementById('favicon-link').href = configMarca.favicon;
+            }
+
+            const socialsEl = document.getElementById('footer-socials');
+            let socialHtml = '';
+            if (configMarca.wa) socialHtml += `<a href="https://wa.me/${configMarca.wa}" target="_blank">📱</a>`;
+            if (configMarca.ig) socialHtml += `<a href="${configMarca.ig}" target="_blank">📸</a>`;
+            if (configMarca.fb) socialHtml += `<a href="${configMarca.fb}" target="_blank">📘</a>`;
+            if (configMarca.tiktok) socialHtml += `<a href="${configMarca.tiktok}" target="_blank">🎵</a>`;
+            socialsEl.innerHTML = socialHtml;
+
+            // Renderizar métodos de pago
+            const pagosEl = document.getElementById('footer-payments');
+            let pagosActivos = [];
+            if(configMarca.pagos) {
+                if(configMarca.pagos.divisa) pagosActivos.push("Divisa");
+                if(configMarca.pagos.soberanos) pagosActivos.push("Soberanos");
+                if(configMarca.pagos.transferencia) pagosActivos.push("Transferencia");
+                if(configMarca.pagos.pagomovil) pagosActivos.push("Pago Móvil");
+                if(configMarca.pagos.zelle) pagosActivos.push("Zelle");
+            }
+            if(pagosActivos.length > 0) {
+                pagosEl.innerHTML = `<strong>Aceptamos:</strong> ${pagosActivos.join(' • ')}`;
+                pagosEl.style.display = 'inline-block';
+            } else {
+                pagosEl.style.display = 'none';
+            }
+        }
+
+        function cambiarVista(vistaId) {
+            if(vistaId === 'admin' && !adminAutenticado) return;
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + vistaId).classList.add('active');
+            window.scrollTo(0, 0);
+            
+            if(vistaId === 'catalog') renderCatalog();
+            if(vistaId === 'admin') {
+                actualizarDatalistCategorias();
+                renderAdminProductos();
+                renderAdminPedidos();
+                renderAdminClientes();
+                cargarFormConfig();
+                generarDashboard();
+            }
+        }
+
+        function actualizarDatalistCategorias() {
+            const list = document.getElementById('category-list');
+            const categorias = [...new Set(productos.map(p => p.category))];
+            list.innerHTML = categorias.map(c => `<option value="${c}">`).join('');
+        }
+
+        // CATÁLOGO
+        function renderCategorias() {
+            const container = document.getElementById('category-filters');
+            const categorias = ['todos', ...new Set(productos.filter(p => p.active !== false).map(p => p.category))];
+            
+            container.innerHTML = categorias.map(cat => `
+                <button class="filter-btn ${categoriaActual === cat ? 'active' : ''}" onclick="filtrarCategoria('${cat}')">
+                    ${cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </button>
+            `).join('');
+        }
+
+        function filtrarCategoria(cat) {
+            categoriaActual = cat;
+            renderCategorias();
+            renderCatalog();
+        }
+
+        function renderCatalog() {
+            renderCategorias();
+            const grid = document.getElementById('product-grid');
+            const query = document.getElementById('search-input').value.toLowerCase();
+
+            let filtrados = productos.filter(p => p.active !== false);
+            if (categoriaActual !== 'todos') filtrados = filtrados.filter(p => p.category === categoriaActual);
+            if (query) filtrados = filtrados.filter(p => p.titulo.toLowerCase().includes(query) || p.desc.toLowerCase().includes(query));
+
+            if(filtrados.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">No hay productos disponibles.</p>';
+                retur
